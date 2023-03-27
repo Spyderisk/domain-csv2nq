@@ -2031,7 +2031,7 @@ parser.add_argument("-o", "--output", dest="output", required=True, metavar="fil
 parser.add_argument("-m", "--mapping", dest="mapping", metavar="filename", help="Output JSON icon-mapping filename")
 parser.add_argument("-u", "--unfiltered", help="Causes SSM GUI Misbehaviour and TWA visibility flags to be set to true.", action="store_true")
 parser.add_argument("-e", "--expanded", help="Add population model support by expanding relevant structures", action="store_true")
-parser.add_argument("-v", "--version", help="Set the versionInfo string (defaults to timestamp) '-unfiltered' will be added to the version string is '-u' is used.")
+parser.add_argument("-v", "--version", help="Set the versionInfo string (defaults to timestamp) '-unfiltered' will be added to the version string if '-u' is used.")
 parser.add_argument("-n", "--name", help="Set the domainGraph string (defaults to what is found in DomainModel.csv). '-unexpanded' will be appended for population models unless '-e' is used.")
 raw = parser.parse_args()
 args = vars(raw)
