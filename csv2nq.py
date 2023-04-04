@@ -622,7 +622,6 @@ def output_twis(nqw, heading, twa_misbehaviour):
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
         uri_index = header.index("URI")
-        label_index = header.index("label")
         affected_by_index = header.index("affectedBy")
         affects_index = header.index("affects")
     
@@ -632,7 +631,6 @@ def output_twis(nqw, heading, twa_misbehaviour):
 
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
-            label = nqw.encode_string(row[label_index])
             affected_by = nqw.encode_ssm_uri(row[affected_by_index])
             affects = nqw.encode_ssm_uri(row[affects_index])
 
@@ -644,7 +642,6 @@ def output_twis(nqw, heading, twa_misbehaviour):
             # Output lines we need to the NQ file
             # Average case
             nqw.write_quad(uri, nqw.encode_rdfns_uri("22-rdf-syntax-ns#type"), nqw.encode_ssm_uri("core#TrustworthinessImpactSet"))
-            nqw.write_quad(uri, nqw.encode_rdfs_uri("rdf-schema#label"), label)
             nqw.write_quad(uri, nqw.encode_ssm_uri("core#affectedBy"), affected_by)
             nqw.write_quad(uri, nqw.encode_ssm_uri("core#affects"), affects)
 
@@ -661,13 +658,11 @@ def output_twis(nqw, heading, twa_misbehaviour):
 
                 uri = nqw.encode_ssm_uri("domain#TWIS-" + min_affects + "-" + max_affected_by)
                 nqw.write_quad(uri, nqw.encode_rdfns_uri("22-rdf-syntax-ns#type"), nqw.encode_ssm_uri("core#TrustworthinessImpactSet"))
-                nqw.write_quad(uri, nqw.encode_rdfs_uri("rdf-schema#label"), label)
                 nqw.write_quad(uri, nqw.encode_ssm_uri("core#affects"), nqw.encode_ssm_uri("domain#" + min_affects))
                 nqw.write_quad(uri, nqw.encode_ssm_uri("core#affectedBy"), nqw.encode_ssm_uri("domain#" + max_affected_by))
 
                 uri = nqw.encode_ssm_uri("domain#TWIS-" + max_affects + "-" + min_affected_by)
                 nqw.write_quad(uri, nqw.encode_rdfns_uri("22-rdf-syntax-ns#type"), nqw.encode_ssm_uri("core#TrustworthinessImpactSet"))
-                nqw.write_quad(uri, nqw.encode_rdfs_uri("rdf-schema#label"), label)
                 nqw.write_quad(uri, nqw.encode_ssm_uri("core#affects"), nqw.encode_ssm_uri("domain#" + max_affects))
                 nqw.write_quad(uri, nqw.encode_ssm_uri("core#affectedBy"), nqw.encode_ssm_uri("domain#" + min_affected_by))
 
