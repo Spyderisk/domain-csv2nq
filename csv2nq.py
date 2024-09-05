@@ -6,6 +6,7 @@ import os
 import json
 from os.path import exists
 import datetime
+import collections
 
 # Local imports
 from nq import nqwriter
@@ -978,7 +979,7 @@ def output_matching_patterns(nqw, heading, roles, assets, relationships, nodes, 
     # Output a spacer at the end of this section
     nqw.write_comment("")
 
-def output_construction_patterns(nqw, heading, roles, assets, relationships, nodes, links):
+def output_construction_patterns(nqw, heading, roles, assets, relationships, nodes, links, cppredecessor, cpsequence):
     # Output a heading for this section
     nqw.write_comment("")
     nqw.write_comment(heading)
@@ -995,7 +996,6 @@ def output_construction_patterns(nqw, heading, roles, assets, relationships, nod
         label_index = header.index("label")
         comment_index = header.index("comment")
         hasMatchingPattern_index = header.index("hasMatchingPattern")
-        hasPriority_index = header.index("hasPriority")
         iterate_index = header.index("iterate")
         maxIterations_index = header.index("maxIterations")
 
@@ -1004,12 +1004,15 @@ def output_construction_patterns(nqw, heading, roles, assets, relationships, nod
                 # Skip the first line which contains default values for csvformat
                 if DUMMY_URI in row: continue
 
+                # Initialise the predecessors dictionary entry (an empty list) and sequence number (initially zero)
+                cppredecessor[row[uri_index]] = []
+                cpsequence[row[uri_index]] = 0
+
                 # Extract the information we need from the next row
                 uri = nqw.encode_ssm_uri(row[uri_index])
                 label = nqw.encode_string(row[label_index])
                 comment = nqw.encode_string(row[comment_index])
                 hasMatchingPattern = nqw.encode_ssm_uri(row[hasMatchingPattern_index])
-                hasPriority = nqw.encode_integer(row[hasPriority_index])
                 iterate = nqw.encode_boolean(row[iterate_index].lower())
                 maxIterations = nqw.encode_integer(row[maxIterations_index])
     
@@ -1018,12 +1021,12 @@ def output_construction_patterns(nqw, heading, roles, assets, relationships, nod
                 nqw.write_quad(uri, nqw.encode_rdfs_uri("rdf-schema#label"), label)
                 nqw.write_quad(uri, nqw.encode_rdfs_uri("rdf-schema#comment"), comment)
                 nqw.write_quad(uri, nqw.encode_ssm_uri("core#hasMatchingPattern"), hasMatchingPattern)
-                nqw.write_quad(uri, nqw.encode_ssm_uri("core#hasPriority"), hasPriority)
                 nqw.write_quad(uri, nqw.encode_ssm_uri("core#iterate"), iterate)
                 nqw.write_quad(uri, nqw.encode_ssm_uri("core#maxIterations"), maxIterations)
 
                 # Output a spacer at the end of this resource
                 nqw.write_comment("")
+
         except StopIteration:
             pass
 
@@ -1124,6 +1127,92 @@ def output_construction_patterns(nqw, heading, roles, assets, relationships, nod
             # Save the link
             if row[hasInferredLink_index] not in links:
                 links[row[hasInferredLink_index]] = create_link(row[hasInferredLink_index], roles, relationships)
+
+    # Get the construction pattern predecessors and save them
+    with open("ConstructionPredecessor.csv", newline="") as csvfile:
+        # Create the CSV reader object
+        reader = csv.reader(csvfile)
+
+        # Check that the table is as expected: if fields are missing this will raise an exception
+        header = next(reader)
+        uri_index = header.index("URI")
+        predecessor_index = header.index("hasPredecessor")
+
+        for row in reader:
+            # Skip the first line which contains default values for csvformat
+            if DUMMY_URI in row: continue
+
+            # Extract and save the information we need
+            uri = row[uri_index]
+            predecessor = row[predecessor_index]
+
+            # Add the predecessor to the set of predecessors for this pattern
+            if predecessor not in cppredecessor[uri]:
+                cppredecessor[uri].append(predecessor)
+
+    # Get the construction pattern successors and save them
+    with open("ConstructionSuccessor.csv", newline="") as csvfile:
+        # Create the CSV reader object
+        reader = csv.reader(csvfile)
+
+        # Check that the table is as expected: if fields are missing this will raise an exception
+        header = next(reader)
+        uri_index = header.index("URI")
+        successor_index = header.index("hasSuccessor")
+
+        for row in reader:
+            # Skip the first line which contains default values for csvformat
+            if DUMMY_URI in row: continue
+
+            # Extract and save the information we need
+            uri = row[uri_index]
+            successor = row[successor_index]
+
+            # Add the URI to the set of predecessors of the successor
+            if uri not in cppredecessor[successor]:
+                cppredecessor[successor].append(uri)
+
+def output_construction_sequence(nqw, heading, cppredecessor, cpsequence):
+    # Use the data to find patterns and assign their priority
+    finished = False
+    i = 1
+    while not finished:
+        # Set finished flag until we find something still to do
+        finished = True
+        
+        # Find CP with no remaining predecessors, and set their sequence number to a positive value 
+        for uri in cpsequence:
+            if uri in cppredecessor:
+                if (cpsequence[uri] == 0) and (len(cppredecessor[uri])==0):
+                    # Found something so the outer loop must continue
+                    finished = False
+                    
+                    # Mark this CP for removal
+                    cpsequence[uri] = -1
+            else:
+                print("Error: CP {} has no list of predecessors".format(uri.replace("domain#CP-","")))
+
+        for uri in cpsequence:
+            if cpsequence[uri] < 0:
+                # Remove this CP from the list of predecessors of other CP
+                for cp in cppredecessor:
+                    if uri in cppredecessor[cp]:
+                        cppredecessor[cp].remove(uri)
+
+                # Set the rank of the removed CP
+                cpsequence[uri] = i
+
+        i = i + 1
+    
+    # Output a heading for this section
+    nqw.write_comment("")
+    nqw.write_comment(heading)
+    nqw.write_comment("")
+
+    # Output the sequence numbers
+    for cp in cpsequence:
+        uri = nqw.encode_ssm_uri(cp)
+        nqw.write_quad(uri, nqw.encode_ssm_uri("core#hasPriority"), nqw.encode_integer(cpsequence[cp]))
 
 #
 # Control strategies, threats and threat categories and compliance sets: no triplets needed,
@@ -2012,7 +2101,28 @@ def output_mapping_file(mapping_filename, ontology, domain_graph):
                 doc["icons"][uri] = icon
     with open(mapping_filename, "w") as output:
         output.write(json.dumps(doc, indent=4))
-        
+
+def log_sequence(log, header, cppredecessor, cpsequence):
+    od = collections.OrderedDict(sorted(cpsequence.items()))
+    log.write("{}\n".format(header))
+    for key in od.keys():
+        log.write("{}: {}".format(key.replace("domain#CP-",""), cpsequence[key]))
+        if key in cppredecessor:
+            values = cppredecessor[key]
+            i = len(values)
+            if i > 0:
+                log.write(", predecessors: ")
+                for uri in values:
+                    i = i - 1
+                    if(i==0):
+                        log.write("{}\n".format(uri.replace("domain#CP-","")))
+                    else:
+                        log.write("{}, ".format(uri.replace("domain#CP-","")))
+            else:
+                log.write(", no predecessors\n")
+        else:
+            log.write(": found no predecessors list\n")
+    log.write("\n")
 
 ####################################################################################################################################################
 #
@@ -2021,6 +2131,7 @@ def output_mapping_file(mapping_filename, ontology, domain_graph):
 
 # Marshall command line arguments
 parser = argparse.ArgumentParser(description="Convert from CSV files to NQ")
+parser.add_argument("-l", "--log", dest="log", metavar="filename", help="Logfile for diagnostic output")
 parser.add_argument("-i", "--input", dest="input", required=True, metavar="directory", help="Directory containing CSV files for input")
 parser.add_argument("-o", "--output", dest="output", required=True, metavar="filename", help="Output NQ filename")
 parser.add_argument("-m", "--mapping", dest="mapping", metavar="filename", help="Output JSON icon-mapping filename")
@@ -2053,6 +2164,14 @@ if args["mapping"]:
 else:
     output_mapping = False
 
+# Open the log file stream
+if args["log"]:
+    log_mapping = True
+    log_filename = os.path.join(os.getcwd(), args["log"])
+    log = open(log_filename, mode="w")
+else:
+    log_mapping = False
+
 # Extract and enter input folder
 csv_directory = args["input"]
 os.chdir(csv_directory)
@@ -2067,6 +2186,9 @@ controls = {}           # will be filled with Control URI
 misbehaviours = {}      # will be filled with Misbehaviour URI
 twas = {}               # will be filled with Trustworthiness Attribute URI
 roles = {}              # will be filled with Role URI
+
+cppredecessor = {}                      # will be filled with lists of predecessor CPs
+cpsequence = collections.OrderedDict()  # will be filled with the calculated priority of each CP
 
 twa_misbehaviour = {}   # will be filled with the Misbehaviour per TWA, gleaned from the TWIS
 
@@ -2112,7 +2234,8 @@ with open(nq_filename, mode="w") as output:
     # Output Patterns, saving nodes and links for later
     output_root_patterns(nqw, "Root pattern definitions", roles, assets, relationships, nodes, role_links)
     output_matching_patterns(nqw, "Matching pattern definitions", roles, assets, relationships, nodes, role_links)
-    output_construction_patterns(nqw, "Construction pattern definitions", roles, assets, relationships, nodes, role_links) 
+    output_construction_patterns(nqw, "Construction pattern definitions", roles, assets, relationships, nodes, role_links, cppredecessor, cpsequence) 
+    output_construction_sequence(nqw, "Construction pattern sequence", cppredecessor, cpsequence)
 
     # Output Threat Categories, Threats and Control Strategies
     output_threat_categories(nqw, "Threat category definitions")
