@@ -24,17 +24,17 @@ from nq import nqwriter
 # some features off after they have been added.
 
 # Domain model expects triples to be expanded
-HAS_POPULATION_MODEL    = "feature#PopulationModel"
+HAS_POPULATION_MODEL = "feature#PopulationModel"
 # Strings appended to the average case to get min and max members of each population triplet
 MIN_SUFFIX = "_Min"
 MAX_SUFFIX = "_Max"
 
 # Flags rather than naming conventions denote secondary and normal operational process threats
-HAS_THREAT_TYPE_FLAGS   = "feature#ThreatTypeFlags"
+HAS_THREAT_TYPE_FLAGS = "feature#ThreatTypeFlags"
 
 # Flags denote whether threats or control strategies should be used in current or future 
 # risk calculations.
-HAS_RISK_TYPE_FLAGS     = "feature#RiskTypeFlags"
+HAS_RISK_TYPE_FLAGS = "feature#RiskTypeFlags"
 
 # Threats can have mixed causes (both TWAS and MS), which means SSM doesn't need to raise the
 # likelihood of each MS to at least the level equivalent to the TW level of its TWAS.
@@ -42,7 +42,11 @@ HAS_MIXED_THREAT_CAUSES = "feature#MixedThreatCauses"
 
 # Asset and relationship types are flagged if they are only used for system model construction 
 # inference.
-HAS_CONSTRUCTION_STATE  = "feature#ConstructionStateFlags"
+HAS_CONSTRUCTION_STATE = "feature#ConstructionStateFlags"
+
+# Construction patterns form a partial sequence based on predecessor and successor relationships
+# instead of having a specified priority (position) in a single construction sequence
+HAS_CONSTRUCTION_DEPENDENCIES  = "feature#ConstructionDependencies"
 
 # There is no feature for CSGs having optional controls because as fas as SSM is concerned 
 # that is an optional feature.
@@ -71,18 +75,17 @@ def output_domain_model(nqw, unfiltered, heading):
             comment_index = header.index("comment")
             supported_index = header.index("supported")
 
-            population_support = False
             for row in reader:
                 # Skip the first line which contains default values for csvformat
                 if DUMMY_URI in row: continue
-                # Extract the information we need from the subsequent row
+
+                # Check if the domain model specifies support for asset populations
                 if(row[uri_index] == HAS_POPULATION_MODEL):
-                    population_support = True
                     if(not raw.expanded):
                         print("Domain model specifies population support, but this was suppressed by the csv2nq command line")
-                supported = row[supported_index].lower() == "true"
 
                 # Write out the line if the feature is supported
+                supported = row[supported_index].lower() == "true"
                 if(supported):
                     feature_list.append(row[uri_index])
 
@@ -985,7 +988,12 @@ def output_construction_patterns(nqw, heading, roles, assets, relationships, nod
     nqw.write_comment(heading)
     nqw.write_comment("")
 
-    # Output the matching pattern
+    # Determine the source of construction sequence priorities
+    if(HAS_CONSTRUCTION_DEPENDENCIES in feature_list):
+        # Extract predecessor/successor relationships and create the CP partial sequence 
+        create_construction_sequence(cppredecessor, cpsequence)
+
+    # Output the construction pattern
     with open("ConstructionPattern.csv", newline="") as csvfile:
         # Create the CSV reader object
         reader = csv.reader(csvfile)
@@ -996,6 +1004,8 @@ def output_construction_patterns(nqw, heading, roles, assets, relationships, nod
         label_index = header.index("label")
         comment_index = header.index("comment")
         hasMatchingPattern_index = header.index("hasMatchingPattern")
+        if(HAS_CONSTRUCTION_DEPENDENCIES not in feature_list):
+            hasPriority_index = header.index("hasPriority")
         iterate_index = header.index("iterate")
         maxIterations_index = header.index("maxIterations")
 
@@ -1004,15 +1014,17 @@ def output_construction_patterns(nqw, heading, roles, assets, relationships, nod
                 # Skip the first line which contains default values for csvformat
                 if DUMMY_URI in row: continue
 
-                # Initialise the predecessors dictionary entry (an empty list) and sequence number (initially zero)
-                cppredecessor[row[uri_index]] = []
-                cpsequence[row[uri_index]] = 0
-
                 # Extract the information we need from the next row
                 uri = nqw.encode_ssm_uri(row[uri_index])
                 label = nqw.encode_string(row[label_index])
                 comment = nqw.encode_string(row[comment_index])
                 hasMatchingPattern = nqw.encode_ssm_uri(row[hasMatchingPattern_index])
+                if(HAS_CONSTRUCTION_DEPENDENCIES in feature_list):
+                    # set the priority to the computed rank in the partial sequence
+                    hasPriority = nqw.encode_integer(cpsequence[row[uri_index]])
+                else:
+                    # set the priority to the hasPriority value from the CSV file
+                    hasPriority = nqw.encode_integer(row[hasPriority_index])
                 iterate = nqw.encode_boolean(row[iterate_index].lower())
                 maxIterations = nqw.encode_integer(row[maxIterations_index])
     
@@ -1021,6 +1033,7 @@ def output_construction_patterns(nqw, heading, roles, assets, relationships, nod
                 nqw.write_quad(uri, nqw.encode_rdfs_uri("rdf-schema#label"), label)
                 nqw.write_quad(uri, nqw.encode_rdfs_uri("rdf-schema#comment"), comment)
                 nqw.write_quad(uri, nqw.encode_ssm_uri("core#hasMatchingPattern"), hasMatchingPattern)
+                nqw.write_quad(uri, nqw.encode_ssm_uri("core#hasPriority"), hasPriority)
                 nqw.write_quad(uri, nqw.encode_ssm_uri("core#iterate"), iterate)
                 nqw.write_quad(uri, nqw.encode_ssm_uri("core#maxIterations"), maxIterations)
 
@@ -1128,6 +1141,24 @@ def output_construction_patterns(nqw, heading, roles, assets, relationships, nod
             if row[hasInferredLink_index] not in links:
                 links[row[hasInferredLink_index]] = create_link(row[hasInferredLink_index], roles, relationships)
 
+def create_construction_sequence(cppredecessor, cpsequence):
+
+    with open("ConstructionPattern.csv", newline="") as csvfile:
+        # Create the CSV reader object
+        reader = csv.reader(csvfile)
+
+        # Check that the table is as expected: if fields are missing this will raise an exception
+        header = next(reader)
+        uri_index = header.index("URI")
+
+        for row in reader:
+            # Skip the first line which contains default values for csvformat
+            if DUMMY_URI in row: continue
+
+            # Initialise the predecessors dictionary entry (an empty list) and sequence number (initially zero)
+            cppredecessor[row[uri_index]] = []
+            cpsequence[row[uri_index]] = 0
+
     # Get the construction pattern predecessors and save them
     with open("ConstructionPredecessor.csv", newline="") as csvfile:
         # Create the CSV reader object
@@ -1137,6 +1168,7 @@ def output_construction_patterns(nqw, heading, roles, assets, relationships, nod
         header = next(reader)
         uri_index = header.index("URI")
         predecessor_index = header.index("hasPredecessor")
+        fake_index = header.index("fake")
 
         for row in reader:
             # Skip the first line which contains default values for csvformat
@@ -1145,9 +1177,10 @@ def output_construction_patterns(nqw, heading, roles, assets, relationships, nod
             # Extract and save the information we need
             uri = row[uri_index]
             predecessor = row[predecessor_index]
+            fake = row[fake_index].lower()
 
             # Add the predecessor to the set of predecessors for this pattern
-            if predecessor not in cppredecessor[uri]:
+            if not fake == "true" and predecessor not in cppredecessor[uri]:
                 cppredecessor[uri].append(predecessor)
 
     # Get the construction pattern successors and save them
@@ -1159,6 +1192,7 @@ def output_construction_patterns(nqw, heading, roles, assets, relationships, nod
         header = next(reader)
         uri_index = header.index("URI")
         successor_index = header.index("hasSuccessor")
+        fake_index = header.index("fake")
 
         for row in reader:
             # Skip the first line which contains default values for csvformat
@@ -1167,12 +1201,12 @@ def output_construction_patterns(nqw, heading, roles, assets, relationships, nod
             # Extract and save the information we need
             uri = row[uri_index]
             successor = row[successor_index]
+            fake = row[fake_index].lower()
 
             # Add the URI to the set of predecessors of the successor
-            if uri not in cppredecessor[successor]:
+            if not fake == "true" and uri not in cppredecessor[successor]:
                 cppredecessor[successor].append(uri)
 
-def output_construction_sequence(nqw, heading, cppredecessor, cpsequence):
     # Use the data to find patterns and assign their priority
     finished = False
     i = 1
@@ -1203,16 +1237,6 @@ def output_construction_sequence(nqw, heading, cppredecessor, cpsequence):
                 cpsequence[uri] = i
 
         i = i + 1
-    
-    # Output a heading for this section
-    nqw.write_comment("")
-    nqw.write_comment(heading)
-    nqw.write_comment("")
-
-    # Output the sequence numbers
-    for cp in cpsequence:
-        uri = nqw.encode_ssm_uri(cp)
-        nqw.write_quad(uri, nqw.encode_ssm_uri("core#hasPriority"), nqw.encode_integer(cpsequence[cp]))
 
 #
 # Control strategies, threats and threat categories and compliance sets: no triplets needed,
@@ -2235,7 +2259,6 @@ with open(nq_filename, mode="w") as output:
     output_root_patterns(nqw, "Root pattern definitions", roles, assets, relationships, nodes, role_links)
     output_matching_patterns(nqw, "Matching pattern definitions", roles, assets, relationships, nodes, role_links)
     output_construction_patterns(nqw, "Construction pattern definitions", roles, assets, relationships, nodes, role_links, cppredecessor, cpsequence) 
-    output_construction_sequence(nqw, "Construction pattern sequence", cppredecessor, cpsequence)
 
     # Output Threat Categories, Threats and Control Strategies
     output_threat_categories(nqw, "Threat category definitions")
