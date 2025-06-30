@@ -119,13 +119,19 @@ def output_domain_model(nqw, unfiltered, heading):
             uri_frags[-1] = args["name"]
             domainGraph = "/".join(uri_frags)
 
+        label = row[label_index]
+        if args["label"]:
+            label = args["label"]
+        else:
+            label = row[label_index]
+
         if (not raw.expanded and HAS_POPULATION_MODEL in feature_list):
             domainGraph = "<{}-unexpanded>".format(domainGraph)
-            label = nqw.encode_string(row[label_index] + "-UNEXPANDED")
+            label = nqw.encode_string(label + "-UNEXPANDED")
             feature_list.remove(HAS_POPULATION_MODEL)
         else:
             domainGraph = "<{}>".format(domainGraph)
-            label = nqw.encode_string(row[label_index])
+            label = nqw.encode_string(label)
         comment = nqw.encode_string(row[comment_index])
 
         versionInfo = args["version"]
@@ -2177,6 +2183,7 @@ parser.add_argument("-u", "--unfiltered", help="Causes SSM GUI Misbehaviour and 
 parser.add_argument("-e", "--expanded", help="Add population model support by expanding relevant structures", action="store_true")
 parser.add_argument("-v", "--version", help="Set the versionInfo string (defaults to timestamp) '-unfiltered' will be added to the version string if '-u' is used.")
 parser.add_argument("-n", "--name", help="Set the domainGraph string (defaults to what is found in DomainModel.csv). '-unexpanded' will be appended for population models unless '-e' is used.")
+parser.add_argument("-b", "--label", help="Set the rdfs:label property (defaults to what is found in DomainModel.csv).")
 raw = parser.parse_args()
 args = vars(raw)
 
