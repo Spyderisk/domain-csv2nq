@@ -1006,6 +1006,14 @@ def output_construction_patterns(nqw, heading, roles, assets, relationships, nod
         hasMatchingPattern_index = header.index("hasMatchingPattern")
         if(HAS_CONSTRUCTION_DEPENDENCIES not in feature_list):
             hasPriority_index = header.index("hasPriority")
+            use_marker = False
+            marker = False
+        else:
+            use_marker = "marker" in header
+            if use_marker:
+                marker_index = header.index("marker")
+            else:
+                marker = False
         iterate_index = header.index("iterate")
         maxIterations_index = header.index("maxIterations")
 
@@ -1019,26 +1027,32 @@ def output_construction_patterns(nqw, heading, roles, assets, relationships, nod
                 label = nqw.encode_string(row[label_index])
                 comment = nqw.encode_string(row[comment_index])
                 hasMatchingPattern = nqw.encode_ssm_uri(row[hasMatchingPattern_index])
+                marker = "false"
                 if(HAS_CONSTRUCTION_DEPENDENCIES in feature_list):
                     # set the priority to the computed rank in the partial sequence
                     hasPriority = nqw.encode_integer(cpsequence[row[uri_index]])
+
+                    # and set the marker flag if this pattern is a marker pattern
+                    if use_marker:
+                        marker = (row[marker_index].lower == "true")
                 else:
                     # set the priority to the hasPriority value from the CSV file
                     hasPriority = nqw.encode_integer(row[hasPriority_index])
                 iterate = nqw.encode_boolean(row[iterate_index].lower())
                 maxIterations = nqw.encode_integer(row[maxIterations_index])
     
-                # Output lines we need to the NQ file
-                nqw.write_quad(uri, nqw.encode_rdfns_uri("22-rdf-syntax-ns#type"), nqw.encode_ssm_uri("core#ConstructionPattern"))
-                nqw.write_quad(uri, nqw.encode_rdfs_uri("rdf-schema#label"), label)
-                nqw.write_quad(uri, nqw.encode_rdfs_uri("rdf-schema#comment"), comment)
-                nqw.write_quad(uri, nqw.encode_ssm_uri("core#hasMatchingPattern"), hasMatchingPattern)
-                nqw.write_quad(uri, nqw.encode_ssm_uri("core#hasPriority"), hasPriority)
-                nqw.write_quad(uri, nqw.encode_ssm_uri("core#iterate"), iterate)
-                nqw.write_quad(uri, nqw.encode_ssm_uri("core#maxIterations"), maxIterations)
+                # Output lines we need to the NQ file, but skipping the pattern if it is a marker pattern
+                if not marker:
+                    nqw.write_quad(uri, nqw.encode_rdfns_uri("22-rdf-syntax-ns#type"), nqw.encode_ssm_uri("core#ConstructionPattern"))
+                    nqw.write_quad(uri, nqw.encode_rdfs_uri("rdf-schema#label"), label)
+                    nqw.write_quad(uri, nqw.encode_rdfs_uri("rdf-schema#comment"), comment)
+                    nqw.write_quad(uri, nqw.encode_ssm_uri("core#hasMatchingPattern"), hasMatchingPattern)
+                    nqw.write_quad(uri, nqw.encode_ssm_uri("core#hasPriority"), hasPriority)
+                    nqw.write_quad(uri, nqw.encode_ssm_uri("core#iterate"), iterate)
+                    nqw.write_quad(uri, nqw.encode_ssm_uri("core#maxIterations"), maxIterations)
 
-                # Output a spacer at the end of this resource
-                nqw.write_comment("")
+                    # Output a spacer at the end of this resource
+                    nqw.write_comment("")
 
         except StopIteration:
             pass
