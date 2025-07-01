@@ -23,6 +23,9 @@ from nq import nqwriter
 # The 'supported' field provides a convenient way for domain modellers to switch
 # some features off after they have been added.
 
+# Domain model is designed to allow omission of dependent packages
+HAS_OPTIONAL_PACKAGES = "feature#OptionalPackages"
+
 # Domain model expects triples to be expanded
 HAS_POPULATION_MODEL = "feature#PopulationModel"
 # Strings appended to the average case to get min and max members of each population triplet
@@ -89,6 +92,8 @@ def output_domain_model(nqw, unfiltered, heading):
                 # Write out the line if the feature is supported
                 if(supported):
                     feature_list.append(row[uri_index])
+                else:
+                    print("Feature " + row[uri_index] + " is included but not supported")
 
             if(raw.expanded and HAS_POPULATION_MODEL not in feature_list):
                 print("Population support was selected via the csv2nq command line, but is not supported by this domain model")
@@ -154,15 +159,59 @@ def output_domain_model(nqw, unfiltered, heading):
         nqw.write_quad(uri, nqw.encode_rdfs_uri("rdf-schema#label"), label)
         nqw.write_quad(uri, nqw.encode_rdfs_uri("rdf-schema#comment"), comment)        
 
-    # Finally, add a list of the features that are supported
+    # Output a spacer at the end of this section
+    nqw.write_comment("")
+
+    # Output a list of the features that are supported (to the cmd line and to the NQ file)
+    print("Domain model feature list: ")
     for featureRef in feature_list:
+        print(" " + featureRef)
         feature = nqw.encode_ssm_uri(featureRef.replace("feature#", "domain#Feature-"))
         nqw.write_quad(feature, nqw.encode_rdfns_uri("22-rdf-syntax-ns#type"), nqw.encode_ssm_uri("core#ModelFeature"))
 
     # Output a spacer at the end of this section
     nqw.write_comment("")
 
-    print("Domain model feature list: ", feature_list)
+    # Now, output a list of packages in the model, including whether they are enabled
+    with open("Packages.csv", newline="") as csvfile:
+        # Create the CSV reader object
+        reader = csv.reader(csvfile)
+
+        # Check that the table is as expected: if fields are missing this will raise an exception
+        header = next(reader)
+        uri_index = header.index("URI")
+        label_index = header.index("Label")
+        enabled_index = header.index("Enabled")
+        comment_index = header.index("Description")
+
+        for row in reader:
+            # Skip the first line which contains default values for csvformat
+            if DUMMY_URI in row: row = next(reader)
+
+            # Extract the information we need from the subsequent row
+            uri = nqw.encode_ssm_uri(row[uri_index].replace("package#", "domain#Package-"))
+            label = nqw.encode_string(row[label_index])
+            comment = nqw.encode_string(row[comment_index])
+            enabled = nqw.encode_boolean(row[enabled_index])
+
+            if(row[enabled_index].lower() == 'true'):
+                package_list.append(row[uri_index])
+            else:
+                print("Package " + row[uri_index] + " is included but not enabled")
+
+            # Ouput the row
+            nqw.write_quad(uri, nqw.encode_rdfns_uri("22-rdf-syntax-ns#type"), nqw.encode_ssm_uri("core#ModelPackage"))
+            nqw.write_quad(uri, nqw.encode_rdfs_uri("rdf-schema#label"), label)
+            nqw.write_quad(uri, nqw.encode_rdfs_uri("rdf-schema#comment"), comment)
+            nqw.write_quad(uri, nqw.encode_ssm_uri("core#enabled"), enabled)
+
+    #Echo the same list to the cmd line
+    print("Domain model packages enabled: ")
+    for packageRef in package_list:
+        print(" " + packageRef)
+
+    # Output a spacer at the end of this section
+    nqw.write_comment("")
 
 #
 # Scale conversion: used for likelihood, impact, risk and population scales, plus two scales
@@ -247,6 +296,7 @@ def output_domain_assets(nqw, unfiltered, heading, entities):
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
         uri_index = header.index("URI")
+        package_index = header.index("package")
         label_index = header.index("label")
         comment_index = header.index("comment")
         isAssertable_index = header.index("isAssertable")
@@ -259,6 +309,7 @@ def output_domain_assets(nqw, unfiltered, heading, entities):
             if DUMMY_URI in row: continue
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
+            package = nqw.encode_ssm_uri(row[package_index].replace("package#", "domain#Package-"))
             label = nqw.encode_string(row[label_index])
             comment = nqw.encode_string(row[comment_index])
             isAssertable = nqw.encode_boolean(row[isAssertable_index])
@@ -268,6 +319,7 @@ def output_domain_assets(nqw, unfiltered, heading, entities):
             
             # Output lines we need to the NQ file
             nqw.write_quad(uri, nqw.encode_rdfns_uri("22-rdf-syntax-ns#type"), nqw.encode_owl_uri("owl#Class"))
+            nqw.write_quad(uri, nqw.encode_ssm_uri("core#inPackage"), package)
             nqw.write_quad(uri, nqw.encode_rdfs_uri("rdf-schema#label"), label)
             nqw.write_quad(uri, nqw.encode_rdfs_uri("rdf-schema#comment"), comment)
             nqw.write_quad(uri, nqw.encode_ssm_uri("core#isAssertable"), isAssertable)
@@ -323,6 +375,7 @@ def output_relationships(nqw, unfiltered, heading, entities):
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
         uri_index = header.index("URI")
+        package_index = header.index("package")
         label_index = header.index("label")
         comment_index = header.index("comment")
         isAssertable_index = header.index("isAssertable")
@@ -337,6 +390,7 @@ def output_relationships(nqw, unfiltered, heading, entities):
 
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
+            package = nqw.encode_ssm_uri(row[package_index].replace("package#", "domain#Package-"))
             label = nqw.encode_string(row[label_index])
             comment = nqw.encode_string(row[comment_index])
             hidden = nqw.encode_boolean(row[hidden_index])
@@ -347,6 +401,7 @@ def output_relationships(nqw, unfiltered, heading, entities):
 
             # Output lines we need to the NQ file
             nqw.write_quad(uri, nqw.encode_rdfns_uri("22-rdf-syntax-ns#type"), nqw.encode_owl_uri("owl#ObjectProperty"))
+            nqw.write_quad(uri, nqw.encode_ssm_uri("core#inPackage"), package)
             nqw.write_quad(uri, nqw.encode_rdfs_uri("rdf-schema#label"), label)
             nqw.write_quad(uri, nqw.encode_rdfs_uri("rdf-schema#comment"), comment)
             nqw.write_quad(uri, nqw.encode_ssm_uri("core#isAssertable"), isAssertable)
@@ -455,6 +510,7 @@ def output_roles(nqw, heading, entities):
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
         uri_index = header.index("URI")
+        package_index = header.index("package")
         label_index = header.index("label")
         comment_index = header.index("comment")
 
@@ -464,11 +520,13 @@ def output_roles(nqw, heading, entities):
 
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
+            package = nqw.encode_ssm_uri(row[package_index].replace("package#", "domain#Package-"))
             label = nqw.encode_string(row[label_index])
             comment = nqw.encode_string(row[comment_index])
  
             # Output lines we need to the NQ file
             nqw.write_quad(uri, nqw.encode_rdfns_uri("22-rdf-syntax-ns#type"), nqw.encode_ssm_uri("core#Role"))
+            nqw.write_quad(uri, nqw.encode_ssm_uri("core#inPackage"), package)
             nqw.write_quad(uri, nqw.encode_rdfs_uri("rdf-schema#label"), label)
             nqw.write_quad(uri, nqw.encode_rdfs_uri("rdf-schema#comment"), comment)
 
@@ -519,6 +577,7 @@ def output_cmr_entity(nqw, unfiltered, entityType, heading, infilename, locfilen
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
         uri_index = header.index("URI")
+        package_index = header.index("package")
         label_index = header.index("label")
         comment_index = header.index("comment")
         isVisible_index = header.index("isVisible")
@@ -533,6 +592,7 @@ def output_cmr_entity(nqw, unfiltered, entityType, heading, infilename, locfilen
             if DUMMY_URI in row: continue
 
             # Extract the information we need from the next row
+            package = nqw.encode_ssm_uri(row[package_index].replace("package#", "domain#Package-"))
             (min_uri, av_uri, max_uri) = nqw.encode_ssm_uri(add_minmax(row[uri_index]))
             (min_label, av_label, max_label) = nqw.encode_string(add_minmax(row[label_index]))
             comment = nqw.encode_string(row[comment_index])
@@ -548,6 +608,7 @@ def output_cmr_entity(nqw, unfiltered, entityType, heading, infilename, locfilen
 
             # Output the average version
             nqw.write_quad(av_uri, nqw.encode_rdfns_uri("22-rdf-syntax-ns#type"), typ)
+            nqw.write_quad(av_uri, nqw.encode_ssm_uri("core#inPackage"), package)
             nqw.write_quad(av_uri, nqw.encode_rdfs_uri("rdf-schema#comment"), comment)
             nqw.write_quad(av_uri, nqw.encode_rdfs_uri("rdf-schema#label"), av_label)
             nqw.write_quad(av_uri, nqw.encode_ssm_uri("core#isVisible"), av_isVisible)
@@ -739,6 +800,7 @@ def output_root_patterns(nqw, heading, roles, assets, relationships, nodes, link
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
         uri_index = header.index("URI")
+        package_index = header.index("package")
         label_index = header.index("label")
 
         # Note that there is a comment field used in the MS Access DB editor, but it is not exported to NQ
@@ -750,10 +812,12 @@ def output_root_patterns(nqw, heading, roles, assets, relationships, nodes, link
 
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
+            package = nqw.encode_ssm_uri(row[package_index].replace("package#", "domain#Package-"))
             label = nqw.encode_string(row[label_index])
  
             # Output lines we need to the NQ file
             nqw.write_quad(uri, nqw.encode_rdfns_uri("22-rdf-syntax-ns#type"), nqw.encode_ssm_uri("core#RootPattern"))
+            nqw.write_quad(uri, nqw.encode_ssm_uri("core#inPackage"), package)
             nqw.write_quad(uri, nqw.encode_rdfs_uri("rdf-schema#label"), label)
 
             # Output a spacer at the end of this resource
@@ -839,9 +903,12 @@ def output_matching_patterns(nqw, heading, roles, assets, relationships, nodes, 
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
         uri_index = header.index("URI")
+        package_index = header.index("package")
         label_index = header.index("label")
         comment_index = header.index("comment")
         hasRootPattern_index = header.index("hasRootPattern")
+
+        # Note that the comment field is not exported to NQ for root patterns, so it may not be necessary here either
 
         for row in reader:
             # Skip the first line which contains default values for csvformat
@@ -849,12 +916,14 @@ def output_matching_patterns(nqw, heading, roles, assets, relationships, nodes, 
 
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
+            package = nqw.encode_ssm_uri(row[package_index].replace("package#", "domain#Package-"))
             label = nqw.encode_string(row[label_index])
             comment = nqw.encode_string(row[comment_index])
             hasRootPattern = nqw.encode_ssm_uri(row[hasRootPattern_index])
  
             # Output lines we need to the NQ file
             nqw.write_quad(uri, nqw.encode_rdfns_uri("22-rdf-syntax-ns#type"), nqw.encode_ssm_uri("core#MatchingPattern"))
+            nqw.write_quad(uri, nqw.encode_ssm_uri("core#inPackage"), package)
             nqw.write_quad(uri, nqw.encode_rdfs_uri("rdf-schema#label"), label)
             nqw.write_quad(uri, nqw.encode_rdfs_uri("rdf-schema#comment"), comment)
             nqw.write_quad(uri, nqw.encode_ssm_uri("core#hasRootPattern"), hasRootPattern)
@@ -1008,6 +1077,7 @@ def output_construction_patterns(nqw, heading, roles, assets, relationships, nod
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
         uri_index = header.index("URI")
+        package_index = header.index("package")
         label_index = header.index("label")
         comment_index = header.index("comment")
         hasMatchingPattern_index = header.index("hasMatchingPattern")
@@ -1031,6 +1101,7 @@ def output_construction_patterns(nqw, heading, roles, assets, relationships, nod
 
                 # Extract the information we need from the next row
                 uri = nqw.encode_ssm_uri(row[uri_index])
+                package = nqw.encode_ssm_uri(row[package_index].replace("package#", "domain#Package-"))
                 label = nqw.encode_string(row[label_index])
                 comment = nqw.encode_string(row[comment_index])
                 hasMatchingPattern = nqw.encode_ssm_uri(row[hasMatchingPattern_index])
@@ -1051,6 +1122,7 @@ def output_construction_patterns(nqw, heading, roles, assets, relationships, nod
                 # Output lines we need to the NQ file, but skipping the pattern if it is a marker pattern
                 if not marker:
                     nqw.write_quad(uri, nqw.encode_rdfns_uri("22-rdf-syntax-ns#type"), nqw.encode_ssm_uri("core#ConstructionPattern"))
+                    nqw.write_quad(uri, nqw.encode_ssm_uri("core#inPackage"), package)
                     nqw.write_quad(uri, nqw.encode_rdfs_uri("rdf-schema#label"), label)
                     nqw.write_quad(uri, nqw.encode_rdfs_uri("rdf-schema#comment"), comment)
                     nqw.write_quad(uri, nqw.encode_ssm_uri("core#hasMatchingPattern"), hasMatchingPattern)
@@ -1378,6 +1450,7 @@ def output_threats(nqw, heading, misbehaviours, twas, roles, misbehaviour_sets, 
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
         uri_index = header.index("URI")
+        package_index = header.index("package")
         label_index = header.index("label")
         comment_index = header.index("comment")
         has_category_index = header.index("hasCategory")
@@ -1407,6 +1480,7 @@ def output_threats(nqw, heading, misbehaviours, twas, roles, misbehaviour_sets, 
             (min_uri, av_uri, max_uri) = nqw.encode_ssm_uri(add_minmax(row[uri_index], prefix))
 
             # Get the other data
+            package = nqw.encode_ssm_uri(row[package_index].replace("package#", "domain#Package-"))
             label = nqw.encode_string(row[label_index])
             comment = nqw.encode_string(row[comment_index])
             has_category = nqw.encode_ssm_uri(row[has_category_index])
@@ -1422,6 +1496,7 @@ def output_threats(nqw, heading, misbehaviours, twas, roles, misbehaviour_sets, 
             
             # Output lines we need to the NQ file
             nqw.write_quad(av_uri, nqw.encode_rdfns_uri("22-rdf-syntax-ns#type"), nqw.encode_ssm_uri("core#Threat"))
+            nqw.write_quad(av_uri, nqw.encode_ssm_uri("core#inPackage"), package)
             nqw.write_quad(av_uri, nqw.encode_rdfs_uri("rdf-schema#label"), label)
             nqw.write_quad(av_uri, nqw.encode_rdfs_uri("rdf-schema#comment"), comment)
             nqw.write_quad(av_uri, nqw.encode_ssm_uri("core#hasCategory"), has_category)
@@ -1628,6 +1703,7 @@ def output_control_strategies(nqw, heading, controls, roles, control_sets):
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
         uri_index = header.index("URI")
+        package_index = header.index("package")
         label_index = header.index("label")
         comment_index = header.index("comment")
         has_blocking_effect_index = header.index("hasBlockingEffect")
@@ -1649,6 +1725,7 @@ def output_control_strategies(nqw, heading, controls, roles, control_sets):
             (min_uri, av_uri, max_uri) = nqw.encode_ssm_uri(add_minmax(row[uri_index], prefix))
 
             # Get the other data
+            package = nqw.encode_ssm_uri(row[package_index].replace("package#", "domain#Package-"))
             comment = nqw.encode_string(row[comment_index])
             label = nqw.encode_string(row[label_index])
             has_blocking_effect = nqw.encode_ssm_uri(row[has_blocking_effect_index])
@@ -1658,6 +1735,7 @@ def output_control_strategies(nqw, heading, controls, roles, control_sets):
 
             # Output lines we need to the NQ file
             nqw.write_quad(av_uri, nqw.encode_rdfns_uri("22-rdf-syntax-ns#type"), nqw.encode_ssm_uri("core#ControlStrategy"))
+            nqw.write_quad(av_uri, nqw.encode_ssm_uri("core#inPackage"), package)
             nqw.write_quad(av_uri, nqw.encode_rdfs_uri("rdf-schema#comment"), comment)
             nqw.write_quad(av_uri, nqw.encode_rdfs_uri("rdf-schema#label"), label)
             nqw.write_quad(av_uri, nqw.encode_ssm_uri("core#hasBlockingEffect"), has_blocking_effect)
@@ -2223,7 +2301,8 @@ csv_directory = args["input"]
 os.chdir(csv_directory)
 
 # Need to keep track of features in this domain model
-feature_list = []       # start with an empty list
+feature_list = []       # start with an empty list of features supported by the domain model structure
+package_list = []       # start with an empty list of submodels included as enabled domain model packages
 
 # We also need to keep track of some foundational entities
 assets = {}             # will be filled with Asset URI
