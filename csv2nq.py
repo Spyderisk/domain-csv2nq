@@ -79,13 +79,14 @@ def output_domain_model(nqw, unfiltered, heading):
                 # Skip the first line which contains default values for csvformat
                 if DUMMY_URI in row: continue
 
-                # Check if the domain model specifies support for asset populations
-                if(row[uri_index] == HAS_POPULATION_MODEL):
-                    if(not raw.expanded):
-                        print("Domain model specifies population support, but this was suppressed by the csv2nq command line")
+                # Check if this row specifies whether the domain model supports for asset population triplet expansion
+                if(row[uri_index] == HAS_POPULATION_MODEL and not raw.expanded):
+                    print("Domain model specifies population support, but this was suppressed by the csv2nq command line")
+                    supported = False
+                else:
+                    supported = row[supported_index].lower() == "true"
 
                 # Write out the line if the feature is supported
-                supported = row[supported_index].lower() == "true"
                 if(supported):
                     feature_list.append(row[uri_index])
 
