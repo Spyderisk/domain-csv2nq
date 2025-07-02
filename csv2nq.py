@@ -122,8 +122,6 @@ def output_domain_model(nqw, unfiltered, heading):
         label = row[label_index]
         if args["label"]:
             label = args["label"]
-        else:
-            label = row[label_index]
 
         if (not raw.expanded and HAS_POPULATION_MODEL in feature_list):
             domainGraph = "<{}-unexpanded>".format(domainGraph)
