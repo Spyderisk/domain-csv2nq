@@ -191,19 +191,18 @@ def output_domain_model(nqw, unfiltered, heading):
             uri = nqw.encode_ssm_uri(row[uri_index].replace("package#", "domain#Package-"))
             label = nqw.encode_string(row[label_index])
             comment = nqw.encode_string(row[comment_index])
+
+            # Extract enabled status if present, default to 'true', and report if disabled
+            isEnabled = True
             if HAS_OPTIONAL_PACKAGES in feature_list:
-                # Find out whether this package is enabled
-                enabled = nqw.encode_boolean(row[enabled_index])
+                isEnabled = row[enabled_index].lower() == 'true'
 
-                # Add it to the enabled package list only if it is enabled
-                if(row[enabled_index].lower() == 'true'):
-                    package_list.append(row[uri_index])
-                else:
-                    print("Package " + row[uri_index] + " is included but not enabled")
-
-            else:
-                # No package is optional so add them all to the enabled package list
+            if isEnabled:
                 package_list.append(row[uri_index])
+                enabled = nqw.encode_boolean("true")
+            else:
+                print("Package " + row[uri_index] + " is included but not enabled")
+                enabled = nqw.encode_boolean("false")
 
             # Ouput the row
             nqw.write_quad(uri, nqw.encode_rdfns_uri("22-rdf-syntax-ns#type"), nqw.encode_ssm_uri("core#ModelPackage"))
