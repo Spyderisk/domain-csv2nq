@@ -208,8 +208,7 @@ def output_domain_model(nqw, unfiltered, heading):
             nqw.write_quad(uri, nqw.encode_rdfns_uri("22-rdf-syntax-ns#type"), nqw.encode_ssm_uri("core#ModelPackage"))
             nqw.write_quad(uri, nqw.encode_rdfs_uri("rdf-schema#label"), label)
             nqw.write_quad(uri, nqw.encode_rdfs_uri("rdf-schema#comment"), comment)
-            if HAS_OPTIONAL_PACKAGES in feature_list:
-                nqw.write_quad(uri, nqw.encode_ssm_uri("core#enabled"), enabled)
+            nqw.write_quad(uri, nqw.encode_ssm_uri("core#enabled"), enabled)
 
     #Echo the same list to the cmd line
     print("Domain model packages enabled: ")
