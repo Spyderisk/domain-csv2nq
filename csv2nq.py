@@ -1943,9 +1943,14 @@ def output_control_strategies(nqw, heading, controls, roles, control_sets):
 #
 # Default settings: CASettings does need to be expanded if population triplets are used,
 # as the SSM GUI needs an isAssertable property to exist for every control (including min 
-# and max coverage variants).
+# and max coverage variants). TWAASettings and MASettings do not because SSM performs the
+# expansion itself based on default settings for the average case.
 #
-def output_casettings(nqw, heading):
+# Default settings can connect an Asset and a Control/TWA/Misbehaviour from unrelated
+# packages, so filtering cannot be based on the package membership of either. It must be
+# determined based on whether the Asset and Control/TWA/Misbehaviour packages are enabled. 
+#
+def output_casettings(nqw, heading, controlTypes, assetTypes):
     # Output a heading for this section
     nqw.write_comment("")
     nqw.write_comment(heading)
@@ -1973,12 +1978,14 @@ def output_casettings(nqw, heading):
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
 
-            # Skip this line if it is in a package that is not enabled
-            if not row[package_index] in package_list: continue
+            # Extract the asset and control type, removing the initial "domain#"
+            controlType = row[has_control_index][len("domain#"):]
+            assetType = row[metaLocatedAt_index][len("domain#"):]
 
-            # Extract the information we need from the next row
-            control = row[has_control_index][7:]  # remove initial "domain#"
-            (min_uri, av_uri, max_uri) = nqw.encode_ssm_uri(add_minmax(row[uri_index], control))
+            # Skip unless both are enabled
+            if (controlType not in controlTypes) or (assetType not in assetTypes): continue
+
+            (min_uri, av_uri, max_uri) = nqw.encode_ssm_uri(add_minmax(row[uri_index], controlType))
             (min_control, av_control, max_control) = nqw.encode_ssm_uri(add_minmax(row[has_control_index]))
             asset = nqw.encode_ssm_uri(row[metaLocatedAt_index])
             is_assertable = nqw.encode_boolean(row[is_assertable_index].lower())
@@ -2022,7 +2029,7 @@ def output_casettings(nqw, heading):
     # Output a spacer at the end of this section
     nqw.write_comment("")
 
-def output_twaa_default_levels(nqw, heading):
+def output_twaa_default_levels(nqw, heading, twaTypes, assetTypes):
     # Output a heading for this section
     nqw.write_comment("")
     nqw.write_comment(heading)
@@ -2047,8 +2054,12 @@ def output_twaa_default_levels(nqw, heading):
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
 
-            # Skip this line if it is in a package that is not enabled
-            if not row[package_index] in package_list: continue
+            # Extract the asset and TWA type, removing the initial "domain#"
+            twaType = row[twa_index][len("domain#"):]
+            assetType = row[metaLocatedAt_index][len("domain#"):]
+
+            # Skip unless both are enabled
+            if (twaType not in twaTypes) or (assetType not in assetTypes): continue
 
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
@@ -2077,7 +2088,7 @@ def output_twaa_default_levels(nqw, heading):
     # Output a spacer at the end of this section
     nqw.write_comment("")
 
-def output_ma_default_levels(nqw, heading):
+def output_ma_default_levels(nqw, heading, misbehaviourTypes, assetTypes):
     # Output a heading for this section
     nqw.write_comment("")
     nqw.write_comment(heading)
@@ -2102,8 +2113,12 @@ def output_ma_default_levels(nqw, heading):
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
 
-            # Skip this line if it is in a package that is not enabled
-            if not row[package_index] in package_list: continue
+            # Extract the asset and TWA type, removing the initial "domain#"
+            misbehaviourType = row[has_misbehaviour_index][len("domain#"):]
+            assetType = row[metaLocatedAt_index][len("domain#"):]
+
+            # Skip unless both are enabled
+            if (misbehaviourType not in misbehaviourTypes) or (assetType not in assetTypes): continue
 
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
@@ -2531,9 +2546,9 @@ with open(nq_filename, mode="w") as output:
     output_control_strategies(nqw, "Control Strategy definitions", controls, roles, control_sets)
 
     # Output default settings
-    output_casettings(nqw, "CASetting definitions: whether a Control is assertible at an Asset")
-    output_ma_default_levels(nqw, "MADefaultSetting definitions: default impact level for a Misbehaviour at an Asset")
-    output_twaa_default_levels(nqw, "TWAADefaultSetting definitions: default TW level for a Trustworthiness Attribute at an Asset")
+    output_casettings(nqw, "CASetting definitions: whether a Control is assertible at an Asset", controls, assets)
+    output_ma_default_levels(nqw, "MADefaultSetting definitions: default impact level for a Misbehaviour at an Asset", misbehaviours, assets)
+    output_twaa_default_levels(nqw, "TWAADefaultSetting definitions: default TW level for a Trustworthiness Attribute at an Asset", twas, assets)
 
     # Output nodes and role links
     output_nodes(nqw, "Node definitions", nodes)
