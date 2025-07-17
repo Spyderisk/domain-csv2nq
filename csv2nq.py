@@ -1778,32 +1778,33 @@ def output_threats(nqw, heading, misbehaviours, twas, roles, misbehaviour_sets, 
     nqw.write_comment("")
 
     # Output the CSG mitigates threat relationships
-    with open("ControlStrategyMitigates.csv", newline="") as csvfile:
-        # Create the CSV reader object
-        reader = csv.reader(csvfile)
+    if HAS_RISK_TYPE_FLAGS not in feature_list:
+        with open("ControlStrategyMitigates.csv", newline="") as csvfile:
+            # Create the CSV reader object
+            reader = csv.reader(csvfile)
 
-        # Check that the table is as expected: if fields are missing this will raise an exception
-        header = next(reader)
-        package_index = header.index("package")
-        uri_index = header.index("URI")
-        mitigates_index = header.index("mitigates")
+            # Check that the table is as expected: if fields are missing this will raise an exception
+            header = next(reader)
+            package_index = header.index("package")
+            uri_index = header.index("URI")
+            mitigates_index = header.index("mitigates")
 
-        for row in reader:
-            # Skip the first line which contains default values for csvformat
-            if DUMMY_URI in row: continue
+            for row in reader:
+                # Skip the first line which contains default values for csvformat
+                if DUMMY_URI in row: continue
 
-            # Skip this line if it is in a package that is not enabled
-            if not row[package_index] in package_list: continue
+                # Skip this line if it is in a package that is not enabled
+                if not row[package_index] in package_list: continue
 
-            # Extract the information we need from the next row
-            av_uri = nqw.encode_ssm_uri(row[uri_index])
-            av_mitigates = nqw.encode_ssm_uri(row[mitigates_index])
-            
-            # Output lines we need to the NQ file
-            nqw.write_quad(av_uri, nqw.encode_ssm_uri("core#mitigates"), av_mitigates)
+                # Extract the information we need from the next row
+                av_uri = nqw.encode_ssm_uri(row[uri_index])
+                av_mitigates = nqw.encode_ssm_uri(row[mitigates_index])
+                
+                # Output lines we need to the NQ file
+                nqw.write_quad(av_uri, nqw.encode_ssm_uri("core#mitigates"), av_mitigates)
 
-    # Output a spacer at the end of this section
-    nqw.write_comment("")
+        # Output a spacer at the end of this section
+        nqw.write_comment("")
     
     # Output the CSG triggers threat relationships
     with open("ControlStrategyTriggers.csv", newline="") as csvfile:
