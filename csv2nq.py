@@ -1968,7 +1968,6 @@ def output_casettings(nqw, heading, controlTypes, assetTypes):
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
         uri_index = header.index("URI")
-        package_index = header.index("package")
         metaLocatedAt_index = header.index("metaLocatedAt")
         has_control_index = header.index("hasControl")
         is_assertable_index = header.index("isAssertable")
@@ -1981,10 +1980,9 @@ def output_casettings(nqw, heading, controlTypes, assetTypes):
 
             # Extract the asset and control type, removing the initial "domain#"
             controlType = row[has_control_index][len("domain#"):]
-            assetType = row[metaLocatedAt_index][len("domain#"):]
 
             # Skip unless both are enabled
-            if (controlType not in controlTypes) or (assetType not in assetTypes): continue
+            if (row[has_control_index] not in controlTypes) or (row[metaLocatedAt_index] not in assetTypes): continue
 
             (min_uri, av_uri, max_uri) = nqw.encode_ssm_uri(add_minmax(row[uri_index], controlType))
             (min_control, av_control, max_control) = nqw.encode_ssm_uri(add_minmax(row[has_control_index]))
@@ -2045,7 +2043,6 @@ def output_twaa_default_levels(nqw, heading, twaTypes, assetTypes):
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
         uri_index = header.index("URI")
-        package_index = header.index("package")
         metaLocatedAt_index = header.index("metaLocatedAt")
         twa_index = header.index("hasTrustworthinessAttribute")
         has_level_index = header.index("hasLevel")
@@ -2055,12 +2052,8 @@ def output_twaa_default_levels(nqw, heading, twaTypes, assetTypes):
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
 
-            # Extract the asset and TWA type, removing the initial "domain#"
-            twaType = row[twa_index][len("domain#"):]
-            assetType = row[metaLocatedAt_index][len("domain#"):]
-
             # Skip unless both are enabled
-            if (twaType not in twaTypes) or (assetType not in assetTypes): continue
+            if (row[twa_index] not in twaTypes) or (row[metaLocatedAt_index] not in assetTypes): continue
 
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
@@ -2114,12 +2107,8 @@ def output_ma_default_levels(nqw, heading, misbehaviourTypes, assetTypes):
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
 
-            # Extract the asset and TWA type, removing the initial "domain#"
-            misbehaviourType = row[has_misbehaviour_index][len("domain#"):]
-            assetType = row[metaLocatedAt_index][len("domain#"):]
-
             # Skip unless both are enabled
-            if (misbehaviourType not in misbehaviourTypes) or (assetType not in assetTypes): continue
+            if (row[has_misbehaviour_index] not in misbehaviourTypes) or (row[metaLocatedAt_index] not in assetTypes): continue
 
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
