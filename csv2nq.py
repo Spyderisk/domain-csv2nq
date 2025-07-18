@@ -179,9 +179,9 @@ def output_domain_model(nqw, unfiltered, heading):
         header = next(reader)
         uri_index = header.index("URI")
         label_index = header.index("Label")
+        comment_index = header.index("Description")
         if HAS_OPTIONAL_PACKAGES in feature_list:
             enabled_index = header.index("Enabled")
-        comment_index = header.index("Description")
 
         for row in reader:
             # Skip the first line which contains default values for csvformat
@@ -312,6 +312,10 @@ def output_domain_assets(nqw, unfiltered, heading, entities):
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
+
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
             package = nqw.encode_ssm_uri(row[package_index].replace("package#", "domain#Package-"))
@@ -350,11 +354,15 @@ def output_domain_assets(nqw, unfiltered, heading, entities):
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
         uri_index = header.index("URI")
+        package_index = header.index("package")
         subClassOf_index = header.index("subClassOf")
 
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
 
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
@@ -392,6 +400,9 @@ def output_relationships(nqw, unfiltered, heading, entities):
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
 
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
@@ -433,11 +444,15 @@ def output_relationships(nqw, unfiltered, heading, entities):
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
         uri_index = header.index("URI")
+        package_index = header.index("package")
         subPropertyOf_index = header.index("subPropertyOf")
 
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
 
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
@@ -457,11 +472,15 @@ def output_relationships(nqw, unfiltered, heading, entities):
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
         uri_index = header.index("URI")
+        package_index = header.index("package")
         domain_index = header.index("domain")
 
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
 
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
@@ -481,11 +500,15 @@ def output_relationships(nqw, unfiltered, heading, entities):
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
         uri_index = header.index("URI")
+        package_index = header.index("package")
         range_index = header.index("range")
 
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
 
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
@@ -523,6 +546,9 @@ def output_roles(nqw, heading, entities):
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
 
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
+
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
             package = nqw.encode_ssm_uri(row[package_index].replace("package#", "domain#Package-"))
@@ -552,11 +578,15 @@ def output_roles(nqw, heading, entities):
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
         uri_index = header.index("URI")
+        package_index = header.index("package")
         metaLocatedAt_index = header.index("metaLocatedAt")
 
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
 
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
@@ -595,6 +625,9 @@ def output_cmr_entity(nqw, unfiltered, entityType, heading, infilename, locfilen
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
 
             # Extract the information we need from the next row
             package = nqw.encode_ssm_uri(row[package_index].replace("package#", "domain#Package-"))
@@ -663,11 +696,15 @@ def output_cmr_entity(nqw, unfiltered, entityType, heading, infilename, locfilen
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
         uri_index = header.index("URI")
+        package_index = header.index("package")
         metaLocatedAt_index = header.index("metaLocatedAt")
 
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
 
             # Extract the information we need from the next row
             (min_uri, av_uri, max_uri) = nqw.encode_ssm_uri(add_minmax(row[uri_index]))
@@ -699,12 +736,16 @@ def output_twis(nqw, heading, twa_misbehaviour):
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
         uri_index = header.index("URI")
+        package_index = header.index("package")
         affected_by_index = header.index("affectedBy")
         affects_index = header.index("affects")
     
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
 
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
@@ -766,12 +807,16 @@ def output_mis(nqw, heading):
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
         uri_index = header.index("URI")
+        package_index = header.index("package")
         inhibited_index = header.index("inhibited")
         inhibited_by_index = header.index("inhibitedBy")
 
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
 
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
@@ -815,6 +860,9 @@ def output_root_patterns(nqw, heading, roles, assets, relationships, nodes, link
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
 
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
+
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
             package = nqw.encode_ssm_uri(row[package_index].replace("package#", "domain#Package-"))
@@ -839,12 +887,16 @@ def output_root_patterns(nqw, heading, roles, assets, relationships, nodes, link
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
         uri_index = header.index("URI")
+        package_index = header.index("package")
         hasNode_index = header.index("hasNode")
         keyNode_index = header.index("keyNode")
 
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
 
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
@@ -874,11 +926,15 @@ def output_root_patterns(nqw, heading, roles, assets, relationships, nodes, link
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
         uri_index = header.index("URI")
+        package_index = header.index("package")
         hasLink_index = header.index("hasLink")
 
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
 
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
@@ -919,6 +975,9 @@ def output_matching_patterns(nqw, heading, roles, assets, relationships, nodes, 
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
 
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
+
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
             package = nqw.encode_ssm_uri(row[package_index].replace("package#", "domain#Package-"))
@@ -947,6 +1006,7 @@ def output_matching_patterns(nqw, heading, roles, assets, relationships, nodes, 
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
         uri_index = header.index("URI")
+        package_index = header.index("package")
         has_node_index = header.index("hasNode")
         mandatory_node_index = header.index("mandatoryNode")
         prohibited_node_index = header.index("prohibitedNode")
@@ -955,6 +1015,9 @@ def output_matching_patterns(nqw, heading, roles, assets, relationships, nodes, 
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
 
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
@@ -989,12 +1052,16 @@ def output_matching_patterns(nqw, heading, roles, assets, relationships, nodes, 
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
         uri_index = header.index("URI")
+        package_index = header.index("package")
         hasLink_index = header.index("hasLink")
         prohibited_index = header.index("prohibited")
 
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
 
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
@@ -1022,11 +1089,15 @@ def output_matching_patterns(nqw, heading, roles, assets, relationships, nodes, 
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
         uri_index = header.index("URI")
+        package_index = header.index("package")
         hasDistinctNodeGroup_index = header.index("hasDistinctNodeGroup")
 
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
 
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
@@ -1047,11 +1118,15 @@ def output_matching_patterns(nqw, heading, roles, assets, relationships, nodes, 
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
         uri_index = header.index("URI")
+        package_index = header.index("package")
         hasNode_index = header.index("hasNode")
  
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
 
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
@@ -1104,6 +1179,9 @@ def output_construction_patterns(nqw, heading, roles, assets, relationships, nod
                 # Skip the first line which contains default values for csvformat
                 if DUMMY_URI in row: continue
 
+                # Skip this line if it is in a package that is not enabled
+                if not row[package_index] in package_list: continue
+
                 # Extract the information we need from the next row
                 uri = nqw.encode_ssm_uri(row[uri_index])
                 package = nqw.encode_ssm_uri(row[package_index].replace("package#", "domain#Package-"))
@@ -1151,6 +1229,7 @@ def output_construction_patterns(nqw, heading, roles, assets, relationships, nod
 
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
+        package_index = header.index("package")
         inPattern_index = header.index("inPattern")
         hasNode_index = header.index("hasNode")
         hasSetting_index = header.index("hasSetting")
@@ -1161,6 +1240,9 @@ def output_construction_patterns(nqw, heading, roles, assets, relationships, nod
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
 
             # Extract the information we need from the next row
             inPattern = nqw.encode_ssm_uri(row[inPattern_index])
@@ -1197,12 +1279,16 @@ def output_construction_patterns(nqw, heading, roles, assets, relationships, nod
 
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
+        package_index = header.index("package")
         uri_index = header.index("URI")
         includesNodeInURI_index = header.index("includesNodeInURI")
 
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
 
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
@@ -1221,12 +1307,16 @@ def output_construction_patterns(nqw, heading, roles, assets, relationships, nod
 
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
+        package_index = header.index("package")
         uri_index = header.index("URI")
         hasInferredLink_index = header.index("hasInferredLink")
 
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
 
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
@@ -1247,11 +1337,15 @@ def create_construction_sequence(cppredecessor, cpsequence):
 
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
+        package_index = header.index("package")
         uri_index = header.index("URI")
 
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
 
             # Initialise the predecessors dictionary entry (an empty list) and sequence number (initially zero)
             cppredecessor[row[uri_index]] = []
@@ -1264,6 +1358,7 @@ def create_construction_sequence(cppredecessor, cpsequence):
 
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
+        package_index = header.index("package")
         uri_index = header.index("URI")
         predecessor_index = header.index("hasPredecessor")
         fake_index = header.index("fake")
@@ -1271,6 +1366,9 @@ def create_construction_sequence(cppredecessor, cpsequence):
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
 
             # Extract and save the information we need
             uri = row[uri_index]
@@ -1288,6 +1386,7 @@ def create_construction_sequence(cppredecessor, cpsequence):
 
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
+        package_index = header.index("package")
         uri_index = header.index("URI")
         successor_index = header.index("hasSuccessor")
         fake_index = header.index("fake")
@@ -1295,6 +1394,9 @@ def create_construction_sequence(cppredecessor, cpsequence):
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
 
             # Extract and save the information we need
             uri = row[uri_index]
@@ -1357,6 +1459,8 @@ def output_threat_categories(nqw, heading):
         label_index = header.index("label")
         comment_index = header.index("comment")
 
+        # Note that threat categories are not in packages - they are treated like part of package#Core
+        
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
@@ -1391,6 +1495,7 @@ def output_compliance_sets(nqw, heading):
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
         uri_index = header.index("URI")
+        package_index = header.index("package")
         label_index = header.index("label")
         comment_index = header.index("comment")
 
@@ -1398,6 +1503,9 @@ def output_compliance_sets(nqw, heading):
             for row in reader:
                 # Skip the first line which contains default values for csvformat
                 if DUMMY_URI in row: continue
+
+                # Skip this line if it is in a package that is not enabled
+                if not row[package_index] in package_list: continue
 
                 # Extract the information we need from the next row
                 uri = nqw.encode_ssm_uri(row[uri_index])
@@ -1424,12 +1532,16 @@ def output_compliance_sets(nqw, heading):
 
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
+        package_index = header.index("package")
         uri_index = header.index("URI")
         requiresTreatmentOf_index = header.index("requiresTreatmentOf")
 
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
 
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
@@ -1471,6 +1583,9 @@ def output_threats(nqw, heading, misbehaviours, twas, roles, misbehaviour_sets, 
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
 
             # Extract the information we need from the next row
 
@@ -1535,12 +1650,16 @@ def output_threats(nqw, heading, misbehaviours, twas, roles, misbehaviour_sets, 
 
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
+        package_index = header.index("package")
         uri_index = header.index("URI")
         hasEntryPoint_index = header.index("hasEntryPoint")
 
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
 
             # Extract the information we need from the next row
             av_uri = nqw.encode_ssm_uri(row[uri_index])
@@ -1573,12 +1692,16 @@ def output_threats(nqw, heading, misbehaviours, twas, roles, misbehaviour_sets, 
 
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
+        package_index = header.index("package")
         uri_index = header.index("URI")
         has_sec_index = header.index("hasSecondaryEffectCondition")
 
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
 
             # Extract the information we need from the next row
             av_uri = nqw.encode_ssm_uri(row[uri_index])
@@ -1601,12 +1724,16 @@ def output_threats(nqw, heading, misbehaviours, twas, roles, misbehaviour_sets, 
 
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
+        package_index = header.index("package")
         uri_index = header.index("URI")
         causes_misbehaviour_index = header.index("causesMisbehaviour")
 
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
 
             # Extract the information we need from the next row
             av_uri = nqw.encode_ssm_uri(row[uri_index])
@@ -1629,12 +1756,16 @@ def output_threats(nqw, heading, misbehaviours, twas, roles, misbehaviour_sets, 
 
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
+        package_index = header.index("package")
         uri_index = header.index("URI")
         blocks_index = header.index("blocks")
 
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
 
             # Extract the information we need from the next row
             av_uri = nqw.encode_ssm_uri(row[uri_index])
@@ -1647,28 +1778,33 @@ def output_threats(nqw, heading, misbehaviours, twas, roles, misbehaviour_sets, 
     nqw.write_comment("")
 
     # Output the CSG mitigates threat relationships
-    with open("ControlStrategyMitigates.csv", newline="") as csvfile:
-        # Create the CSV reader object
-        reader = csv.reader(csvfile)
+    if HAS_RISK_TYPE_FLAGS not in feature_list:
+        with open("ControlStrategyMitigates.csv", newline="") as csvfile:
+            # Create the CSV reader object
+            reader = csv.reader(csvfile)
 
-        # Check that the table is as expected: if fields are missing this will raise an exception
-        header = next(reader)
-        uri_index = header.index("URI")
-        mitigates_index = header.index("mitigates")
+            # Check that the table is as expected: if fields are missing this will raise an exception
+            header = next(reader)
+            package_index = header.index("package")
+            uri_index = header.index("URI")
+            mitigates_index = header.index("mitigates")
 
-        for row in reader:
-            # Skip the first line which contains default values for csvformat
-            if DUMMY_URI in row: continue
+            for row in reader:
+                # Skip the first line which contains default values for csvformat
+                if DUMMY_URI in row: continue
 
-            # Extract the information we need from the next row
-            av_uri = nqw.encode_ssm_uri(row[uri_index])
-            av_mitigates = nqw.encode_ssm_uri(row[mitigates_index])
-            
-            # Output lines we need to the NQ file
-            nqw.write_quad(av_uri, nqw.encode_ssm_uri("core#mitigates"), av_mitigates)
+                # Skip this line if it is in a package that is not enabled
+                if not row[package_index] in package_list: continue
 
-    # Output a spacer at the end of this section
-    nqw.write_comment("")
+                # Extract the information we need from the next row
+                av_uri = nqw.encode_ssm_uri(row[uri_index])
+                av_mitigates = nqw.encode_ssm_uri(row[mitigates_index])
+                
+                # Output lines we need to the NQ file
+                nqw.write_quad(av_uri, nqw.encode_ssm_uri("core#mitigates"), av_mitigates)
+
+        # Output a spacer at the end of this section
+        nqw.write_comment("")
     
     # Output the CSG triggers threat relationships
     with open("ControlStrategyTriggers.csv", newline="") as csvfile:
@@ -1677,12 +1813,16 @@ def output_threats(nqw, heading, misbehaviours, twas, roles, misbehaviour_sets, 
 
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
+        package_index = header.index("package")
         uri_index = header.index("URI")
         triggers_index = header.index("triggers")
 
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
 
             # Extract the information we need from the next row
             av_uri = nqw.encode_ssm_uri(row[uri_index])
@@ -1719,6 +1859,9 @@ def output_control_strategies(nqw, heading, controls, roles, control_sets):
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
 
             # Get expansion prefix, which assumes the base URI is of the form domain#CSG-Body or domain#CSG-Body-[Tail] where Tail can include further dashes
             bits = row[uri_index][7:].split("-")
@@ -1765,6 +1908,7 @@ def output_control_strategies(nqw, heading, controls, roles, control_sets):
 
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
+        package_index = header.index("package")
         uri_index = header.index("URI")
         has_control_set_index = header.index("hasControlSet")
         optional_index = header.index("optional")
@@ -1772,6 +1916,9 @@ def output_control_strategies(nqw, heading, controls, roles, control_sets):
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip this line if it is in a package that is not enabled
+            if not row[package_index] in package_list: continue
 
             # Extract the information we need from the next row
             av_uri = nqw.encode_ssm_uri(row[uri_index])
@@ -1797,9 +1944,14 @@ def output_control_strategies(nqw, heading, controls, roles, control_sets):
 #
 # Default settings: CASettings does need to be expanded if population triplets are used,
 # as the SSM GUI needs an isAssertable property to exist for every control (including min 
-# and max coverage variants).
+# and max coverage variants). TWAASettings and MASettings do not because SSM performs the
+# expansion itself based on default settings for the average case.
 #
-def output_casettings(nqw, heading):
+# Default settings can connect an Asset and a Control/TWA/Misbehaviour from unrelated
+# packages, so filtering cannot be based on the package membership of either. It must be
+# determined based on whether the Asset and Control/TWA/Misbehaviour packages are enabled. 
+#
+def output_casettings(nqw, heading, controlTypes, assetTypes):
     # Output a heading for this section
     nqw.write_comment("")
     nqw.write_comment(heading)
@@ -1826,9 +1978,13 @@ def output_casettings(nqw, heading):
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
 
-            # Extract the information we need from the next row
-            control = row[has_control_index][7:]  # remove initial "domain#"
-            (min_uri, av_uri, max_uri) = nqw.encode_ssm_uri(add_minmax(row[uri_index], control))
+            # Extract the asset and control type, removing the initial "domain#"
+            controlType = row[has_control_index][len("domain#"):]
+
+            # Skip unless both are enabled
+            if (row[has_control_index] not in controlTypes) or (row[metaLocatedAt_index] not in assetTypes): continue
+
+            (min_uri, av_uri, max_uri) = nqw.encode_ssm_uri(add_minmax(row[uri_index], controlType))
             (min_control, av_control, max_control) = nqw.encode_ssm_uri(add_minmax(row[has_control_index]))
             asset = nqw.encode_ssm_uri(row[metaLocatedAt_index])
             is_assertable = nqw.encode_boolean(row[is_assertable_index].lower())
@@ -1872,7 +2028,7 @@ def output_casettings(nqw, heading):
     # Output a spacer at the end of this section
     nqw.write_comment("")
 
-def output_twaa_default_levels(nqw, heading):
+def output_twaa_default_levels(nqw, heading, twaTypes, assetTypes):
     # Output a heading for this section
     nqw.write_comment("")
     nqw.write_comment(heading)
@@ -1895,6 +2051,9 @@ def output_twaa_default_levels(nqw, heading):
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip unless both are enabled
+            if (row[twa_index] not in twaTypes) or (row[metaLocatedAt_index] not in assetTypes): continue
 
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
@@ -1923,7 +2082,7 @@ def output_twaa_default_levels(nqw, heading):
     # Output a spacer at the end of this section
     nqw.write_comment("")
 
-def output_ma_default_levels(nqw, heading):
+def output_ma_default_levels(nqw, heading, misbehaviourTypes, assetTypes):
     # Output a heading for this section
     nqw.write_comment("")
     nqw.write_comment(heading)
@@ -1938,6 +2097,7 @@ def output_ma_default_levels(nqw, heading):
         
         # Check that the table is as expected: if fields are missing this will raise an exception
         header = next(reader)
+        package_index = header.index("package")
         uri_index = header.index("URI")
         metaLocatedAt_index = header.index("metaLocatedAt")
         has_misbehaviour_index = header.index("hasMisbehaviour")
@@ -1946,6 +2106,9 @@ def output_ma_default_levels(nqw, heading):
         for row in reader:
             # Skip the first line which contains default values for csvformat
             if DUMMY_URI in row: continue
+
+            # Skip unless both are enabled
+            if (row[has_misbehaviour_index] not in misbehaviourTypes) or (row[metaLocatedAt_index] not in assetTypes): continue
 
             # Extract the information we need from the next row
             uri = nqw.encode_ssm_uri(row[uri_index])
@@ -2373,9 +2536,9 @@ with open(nq_filename, mode="w") as output:
     output_control_strategies(nqw, "Control Strategy definitions", controls, roles, control_sets)
 
     # Output default settings
-    output_casettings(nqw, "CASetting definitions: whether a Control is assertible at an Asset")
-    output_ma_default_levels(nqw, "MADefaultSetting definitions: default impact level for a Misbehaviour at an Asset")
-    output_twaa_default_levels(nqw, "TWAADefaultSetting definitions: default TW level for a Trustworthiness Attribute at an Asset")
+    output_casettings(nqw, "CASetting definitions: whether a Control is assertible at an Asset", controls, assets)
+    output_ma_default_levels(nqw, "MADefaultSetting definitions: default impact level for a Misbehaviour at an Asset", misbehaviours, assets)
+    output_twaa_default_levels(nqw, "TWAADefaultSetting definitions: default TW level for a Trustworthiness Attribute at an Asset", twas, assets)
 
     # Output nodes and role links
     output_nodes(nqw, "Node definitions", nodes)
