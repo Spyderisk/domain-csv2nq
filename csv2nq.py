@@ -1188,7 +1188,6 @@ def output_construction_patterns(nqw, heading, roles, assets, relationships, nod
                 label = nqw.encode_string(row[label_index])
                 comment = nqw.encode_string(row[comment_index])
                 hasMatchingPattern = nqw.encode_ssm_uri(row[hasMatchingPattern_index])
-                marker = "false"
                 if(HAS_CONSTRUCTION_DEPENDENCIES in feature_list):
                     # set the priority to the computed rank in the partial sequence
                     hasPriority = nqw.encode_integer(cpsequence[row[uri_index]])
@@ -1222,7 +1221,7 @@ def output_construction_patterns(nqw, heading, roles, assets, relationships, nod
     # Output a spacer at the end of this section
     nqw.write_comment("")
 
-    # Output the inferred nodes
+    # Output the inferred nodes: note that 'marker' patterns do not create inferred assets so there is no need to filter them here
     with open("InferredNodeSetting.csv", newline="") as csvfile:
         # Create the CSV reader object
         reader = csv.reader(csvfile)
@@ -1300,7 +1299,7 @@ def output_construction_patterns(nqw, heading, roles, assets, relationships, nod
     # Output a spacer at the end of this section
     nqw.write_comment("")
 
-    # Output the inferred links
+    # Output the inferred links: note that 'marker' patterns do not create inferred links so there is no need to filter them here
     with open("ConstructionPatternLinks.csv", newline="") as csvfile:
         # Create the CSV reader object
         reader = csv.reader(csvfile)
