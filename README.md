@@ -2,7 +2,7 @@
 
 Tool to convert from domain model CSV files to an NQ file.
 
-Usage: `csv2nq.py [-h] -i directory -o filename [-m filename] [-u] [-e] [-v VERSION] [-n NAME]`
+Usage: `csv2nq.py [-h] -i directory -o filename [-m filename] [-u] [-e] [-v VERSION] [-n NAME] [-b LABEL]`
 
 ```
   -i directory, --input directory
